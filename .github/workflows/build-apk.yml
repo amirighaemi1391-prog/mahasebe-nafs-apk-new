@@ -1,0 +1,46 @@
+name: ساخت APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: دریافت پروژه
+        uses: actions/checkout@v4
+
+      - name: استخراج فایل ZIP
+        run: |
+          mkdir project
+          unzip -q ./*.zip -d project
+
+      - name: نصب Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: آماده‌سازی Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: پیدا کردن پروژه Android
+        run: |
+          ROOT=$(find project -name settings.gradle -type f -print -quit | xargs dirname)
+          echo "ROOT=$ROOT" >> $GITHUB_ENV
+
+      - name: ساخت APK
+        run: |
+          gradle -p "$ROOT" assembleDebug --stacktrace
+
+      - name: تحویل APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: محاسبه-نفس-APK
+          path: project/**/app/build/outputs/apk/debug/*.apk
